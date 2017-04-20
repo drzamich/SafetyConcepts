@@ -16,3 +16,4 @@ obj/
 
 compile.bat
 *.exe
+*.save-failed
