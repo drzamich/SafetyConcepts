@@ -45,19 +45,19 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
         theoreticalCDF(i) = cdf(a,b,mx,sx,samplesInvCDF(i),t)
     end do
 
-    open(10,file='empiricCDF.txt')
+    open(10,file='data/empiricCDF.txt')
     do i=1,samplesSize
         write(10,*) samplesInvCDF(i), real(i)/samplesSize
     end do
     close(10)
 
-    open(10,file='theoryCDF.txt')
+    open(10,file='data/theoryCDF.txt')
     do i=1,samplesSize
         write(10,*) samplesInvCDF(i), theoreticalCDF(i)
     end do
     close(10)
 
-    open(10,file='theoreticalPDF.txt')
+    open(10,file='data/theoreticalPDF.txt')
     do i=1,samplesSize
         write(10,*) samplesInvCDF(i), pdf(a,b,mx,sx,samplesInvCDF(i),x0,t)
     end do
@@ -76,6 +76,7 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
 
     allocate(histogramData(histogramBarsInt,2))
 
+    open(10,file='data/histograms.txt')
     bottomRangeTemp=bottomRange
     do i=1,histogramBarsInt
         valueCounter=0
@@ -97,26 +98,40 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
             end if
         end do
         write(*,*) "items in range:", valueCounter
-        histogramData(i,2)=valueCounter/samplesSize
+        write(10,*) bottomRange, valueCounter*barSize
+        write(10,*) topRange, valueCounter*barSize
         bottomRangeTemp=bottomRange
         bottomRange=topRange
     end do
-
-    open(10,file='histograms.txt')
-    do i=1,histogramBarsInt
-        write(10,*) histogramData(i,1), histogramData(i,2)
-    end do
     close(10)
 
-    open(10,file='plot_cdf.plt')
+    !open(10,file='data/histograms.txt')
+    !do i=1,histogramBarsInt
+     !   write(10,*) histogramData(i,1), histogramData(i,2)
+    !end do
+    !close(10)
+
+    open(10,file='data/plot_cdf.plt')
     write(10,*) 'set title "Empiric vs theoretical CDF - ',trim(distributionName),'"'
     write(10,*) 'set xlabel "x"'
     write(10,*) 'set ylabel "F(x)"'
     write(10,*) 'set terminal png'
     write(10,*) 'set style data lines'
-    write(10,'(A,I2.2,A)') 'set output "cdfs_',t,'.png"'
-    write(10,*) 'plot "empiricCDF.txt" title "Empiric CDF", "theoryCDF.txt" title "Theoretical CDF"'
+    write(10,'(A,I2.2,A)') 'set output "data/cdfs_',t,'.png"'
+    write(10,*) 'plot "data/empiricCDF.txt" title "Empiric CDF", "data/theoryCDF.txt" title "Theoretical CDF"'
     close(10)
-    call system('gnuplot\wgnuplot plot_cdf.plt')
-    call system('gnuplot\wgnuplot plot2.plt')
+
+    open(10,file='data/plot_pdf.plt')
+    write(10,*) 'set title "Empiric vs theoretical PDF - ',trim(distributionName),'"'
+    write(10,*) 'set xlabel "x"'
+    write(10,*) 'set ylabel "f(x)"'
+    write(10,*) 'set terminal png'
+    write(10,*) 'set style data lines'
+    write(10,'(A,I2.2,A)') 'set output "data/pdfs_',t,'.png"'
+    write(10,*) 'plot "data/histograms.txt" title "Histograms", "data/theoreticalPDF.txt" title "Theoretical PDF"'
+    !write(10,*) 'plot "data/theoreticalPDF.txt" title "Theoretical PDF", "data/histograms.txt" title "Histograms" with histograms'
+    close(10)
+
+    call system('gnuplot\wgnuplot data\plot_cdf.plt')
+    call system('gnuplot\wgnuplot data\plot_pdf.plt')
 end subroutine
