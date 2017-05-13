@@ -45,4 +45,6 @@ subroutine testFunctions
     write(*,*) "Value of CDF-1:", inv_cdf(a,b,mx,sx,t,q,x0)
     write(*,*)
 
+    -lalalla
+
 end subroutine
