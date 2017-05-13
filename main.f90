@@ -6,5 +6,5 @@ program main
 
     !call testFunctions(a,b,mx,sx,q,x0,x)
     !call testFunction(a,b,mx,sx,q,x0,x,t)
-    call generateCdfs(samplesSize,a,b,mx,sx,q,x0,t)
+    call generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
 end

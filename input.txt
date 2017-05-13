@@ -1,13 +1,14 @@
 TESTING FUNCTION / CALCULATING CDF and PDF
--500 a
-5 b
+0 a
+10 b
 0.6 mx
 0.3 sx
 0.6 x
 0.5 x0
 0.4 q
-2 t
+1 t
 
 GENERATION OF GRAPHS
-1 type of function
-100 number of points
+2 type of function
+10000 number of points
+1 relative size of the histogram bar

@@ -19,6 +19,7 @@ read(10,*)
 read(10,*)
 read(10,*) samplesType
 read(10,*) samplesSize
+read(10,*) barSize
 close(10)
 
 

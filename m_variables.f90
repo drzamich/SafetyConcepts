@@ -6,4 +6,5 @@ module variables
     real pi
 
     integer samplesType, samplesSize
+    real barSize
 end module
