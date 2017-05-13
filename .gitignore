@@ -18,3 +18,9 @@ gnuplot/
 compile.bat
 *.exe
 *.save-failed
+
+
+*.png
+*.plt
+*.txt
+!input.txt

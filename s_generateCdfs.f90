@@ -14,6 +14,20 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
     real barSize
     real,allocatable:: histogramData(:,:)
     real valueCounter
+    character(len=100) distributionName
+
+    select case(t)
+            case(1)      !uniform distribution
+            distributionName = "Uniform distribution"
+        case(2)      !standard normal distribution
+            distributionName ="Standard normal distribution"
+        case(3)      !normal distribution
+            distributionName ="Normal distribution"
+        case(4)      !log-normal distribution
+            distributionName ="Log-Normal distribution"
+        case(5)       !exponential distribution
+            distributionName ="Exponential distribution"
+    end select
 
 
     do i=1,samplesSize
@@ -93,6 +107,16 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
         write(10,*) histogramData(i,1), histogramData(i,2)
     end do
     close(10)
-    call system('gnuplot\wgnuplot plot.plt')
+
+    open(10,file='plot_cdf.plt')
+    write(10,*) 'set title "Empiric vs theoretical CDF - ',trim(distributionName),'"'
+    write(10,*) 'set xlabel "x"'
+    write(10,*) 'set ylabel "F(x)"'
+    write(10,*) 'set terminal png'
+    write(10,*) 'set style data lines'
+    write(10,'(A,I2.2,A)') 'set output "cdfs_',t,'.png"'
+    write(10,*) 'plot "empiricCDF.txt" title "Empiric CDF", "theoryCDF.txt" title "Theoretical CDF"'
+    close(10)
+    call system('gnuplot\wgnuplot plot_cdf.plt')
     call system('gnuplot\wgnuplot plot2.plt')
 end subroutine
