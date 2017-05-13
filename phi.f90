@@ -55,3 +55,12 @@ recursive real function phi_inv(q) result(phi_inv_res)
     !more more more
 end function
 
+real function phi_small(x)
+    implicit none
+    real x
+    real pi
+    pi=3.1415926535
+
+    phi_small=(1/sqrt(2*pi))*exp((-1)*(x**2)*0.5)
+end function
+

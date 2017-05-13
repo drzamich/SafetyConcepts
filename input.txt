@@ -1,6 +1,13 @@
--500     a
-5      b
-0     mx
-1     sx
-1      t
+TESTING FUNCTION / CALCULATING CDF and PDF
+-500 a
+5 b
+0.6 mx
+0.3 sx
+0.6 x
+0.5 x0
+0.4 q
+2 t
 
+GENERATION OF GRAPHS
+1 type of function
+100 number of points

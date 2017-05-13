@@ -1,4 +1,4 @@
-real function cdf(a,b,mx,sx,t,x,x0)
+real function cdf(a,b,mx,sx,x,x0,t)
     implicit none
 
     real x,x0
@@ -27,7 +27,7 @@ real function cdf(a,b,mx,sx,t,x,x0)
 end function
 
 
-real function inv_cdf(a,b,mx,sx,t,q,x0)
+real function inv_cdf(a,b,mx,sx,q,x0,t)
     implicit none
 
     real x,q
@@ -52,4 +52,36 @@ real function inv_cdf(a,b,mx,sx,t,q,x0)
     end select
 
 end function
+
+
+real function pdf(a,b,mx,sx,x,x0,t)
+    implicit none
+
+    real x,q
+    real phi_inv, phi_small
+    real a,b,x0
+    real mx,sx,mu,su
+    integer t
+    real pi
+
+    pi=3.1415926535
+
+    select case(t)
+        case(1)      !uniform distribution
+            pdf=1/(b-a)
+        case(2)      !standard normal distribution
+            pdf=phi_small(x)
+        case(3)      !normal distribution
+            pdf=(1/(sx*sqrt(2*pi)))*exp(-0.5*((x-mx)/sx)**2)
+        case(4)      !log-normal distribution
+            su=sqrt(log((sx/(mx-x0))**2+1))
+            mu=log(mx-x0)-(su**2)*0.5
+
+            pdf=(1/(su*(x-x0)))*phi_small((log(x-x0)-mu)/(su))
+        case(5)       !exponential distribution
+            pdf=b*exp(-b*(x-x0))
+    end select
+
+end function
+
 

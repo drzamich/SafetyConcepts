@@ -10,6 +10,7 @@
 # generated directories
 bin/
 obj/
+gnuplot/
 
 # End of https://www.gitignore.io/api/codeblocks
 
