@@ -76,7 +76,6 @@ real function pdf(a,b,mx,sx,x,x0,t)
         case(4)      !log-normal distribution
             su=sqrt(log((sx/(mx-x0))**2+1))
             mu=log(mx-x0)-(su**2)*0.5
-
             pdf=(1/(su*(x-x0)))*phi_small((log(x-x0)-mu)/(su))
         case(5)       !exponential distribution
             pdf=b*exp(-b*(x-x0))

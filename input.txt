@@ -1,13 +1,22 @@
 TESTING FUNCTION / CALCULATING CDF and PDF
 0 a
 10 b
-0.6 mx
-0.3 sx
+0 mx
+0.25 sx
 0.6 x
-0.5 x0
+-1 x0
 0.4 q
 1 t
 
 GENERATION OF GRAPHS
-10000 number of points
-0.01 relative size of the histogram bar
+100 number of points
+0.1 relative size of the histogram bar
+
+
+
+distribution types
+1 "Uniform distribution"
+2 standard normal distribution
+3 normal distribution
+4 log-normal distribution"
+5 exponential distribution

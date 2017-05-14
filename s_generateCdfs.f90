@@ -17,7 +17,7 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
     character(len=100) distributionName
 
     select case(t)
-            case(1)      !uniform distribution
+        case(1)      !uniform distribution
             distributionName = "Uniform distribution"
         case(2)      !standard normal distribution
             distributionName ="Standard normal distribution"
@@ -42,7 +42,7 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
     end do
 
     do i=1,samplesSize
-        theoreticalCDF(i) = cdf(a,b,mx,sx,samplesInvCDF(i),t)
+        theoreticalCDF(i) = cdf(a,b,mx,sx,samplesInvCDF(i),x0,t)
     end do
 
     open(10,file='data/empiricCDF.txt')
@@ -71,7 +71,7 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
     rangeWidth = topRange-bottomRange
     histogramBarsReal = 1/barSize
     histogramBarsInt=int(histogramBarsReal)
-    write(*,*) histogramBarsInt
+    !write(*,*) histogramBarsInt
 
 
     allocate(histogramData(histogramBarsInt,2))
@@ -83,9 +83,9 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
         topRange = bottomRange+barSize*rangeWidth
         mediumRange = (topRange+bottomRange)*0.5
         histogramData(i,1) = mediumRange
-        write(*,*) "step",i
-        write(*,*) "bottom range", bottomRange
-        write(*,*) "top range", topRange
+        !write(*,*) "step",i
+        !write(*,*) "bottom range", bottomRange
+        !write(*,*) "top range", topRange
         do j=1,samplesSize
             if(j.ne.samplesSize) then
                 if((samplesInvCDF(j).ge.bottomRange).and.(samplesInvCDF(j).lt.topRange)) then
@@ -97,9 +97,9 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
                 end if
             end if
         end do
-        write(*,*) "items in range:", valueCounter
-        write(10,*) bottomRange, valueCounter*barSize
-        write(10,*) topRange, valueCounter*barSize
+        !write(*,*) "items in range:", valueCounter
+        write(10,*) bottomRange, valueCounter/samplesSize*10
+        write(10,*) topRange, valueCounter/samplesSize*10
         bottomRangeTemp=bottomRange
         bottomRange=topRange
     end do
