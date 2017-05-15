@@ -98,8 +98,8 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
             end if
         end do
         !write(*,*) "items in range:", valueCounter
-        write(10,*) bottomRange, valueCounter/samplesSize*10
-        write(10,*) topRange, valueCounter/samplesSize*10
+        write(10,*) bottomRange, valueCounter/samplesSize
+        write(10,*) topRange, valueCounter/samplesSize
         bottomRangeTemp=bottomRange
         bottomRange=topRange
     end do
@@ -128,7 +128,7 @@ subroutine generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
     write(10,*) 'set terminal png'
     write(10,*) 'set style data lines'
     write(10,'(A,I2.2,A)') 'set output "data/pdfs_',t,'.png"'
-    write(10,*) 'plot "data/histograms.txt" title "Histograms", "data/theoreticalPDF.txt" title "Theoretical PDF"'
+    write(10,*) 'plot "data/histograms.txt" title "Histograms" axes x1y2, "data/theoreticalPDF.txt" title "Theoretical PDF"'
     !write(10,*) 'plot "data/theoreticalPDF.txt" title "Theoretical PDF", "data/histograms.txt" title "Histograms" with histograms'
     close(10)
 
