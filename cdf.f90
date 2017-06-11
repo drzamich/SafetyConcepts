@@ -21,6 +21,8 @@ real function cdf(a,b,mx,sx,x,x0,t)
             cdf=phi((log(x-x0)-mu)/su)
         case(5)       !exponential distribution
             cdf=1-exp(-1*b*(x-x0))
+		case(6) 		!ex-max type 1
+			cdf=exp(-1*exp(-1*a*(x-b)))
     end select
 
 
@@ -48,7 +50,11 @@ real function inv_cdf(a,b,mx,sx,q,x0,t)
             mu=log(mx-x0)-(su**2)*0.5
             inv_cdf=x0+exp(mu+su*phi_inv(q))
         case(5)       !exponential distribution
-            inv_cdf=x0-(1/b)*log(1-q)
+			inv_cdf=x0-(1/b)*log(1-q)
+		case(6) !ex-max type 1 distribution
+			a=(3.141/sqrt(6.0))*(1/sx)
+			b=mx-(0.577216/a)
+			inv_cdf=b-(1/a)*log(-1*log(q))
     end select
 
 end function
@@ -79,8 +85,8 @@ real function pdf(a,b,mx,sx,x,x0,t)
             pdf=(1/(su*(x-x0)))*phi_small((log(x-x0)-mu)/(su))
         case(5)       !exponential distribution
             pdf=b*exp(-b*(x-x0))
+        case(6) !ex-max type I
+            pdf=a*exp(-1*a*(x-b)-exp(-1*a*(x-b)))
     end select
 
 end function
-
-
