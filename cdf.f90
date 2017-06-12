@@ -97,3 +97,9 @@ real function pdfn(mx,sx,x)
     pi=3.1415926535
     pdfn=(1/(sx*sqrt(2*pi)))*exp(-0.5*((x-mx)/sx)**2)
 end function
+
+
+real function inv_cdfn(mx,sx,q)
+    real mx,sx,q
+    inv_cdfn=mx+sx*phi_inv(q)
+end function
