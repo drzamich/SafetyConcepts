@@ -10,7 +10,7 @@ real failureFunction
 real charts
 
 count=0
-size1=100000
+size1=1000
 charts=5
 
 
@@ -87,7 +87,7 @@ do i=1,size1
 	end if
 
 	if(mod(real(i),charts)==0.0) then
-        call plotFailure(i)
+        !call plotFailure(i)
     end if
 
     write(30,*) i, real(count)/real(i)
@@ -151,6 +151,27 @@ subroutine plotConvergence
     write(40,*) 'set xlabel "Sampled points"'
     write(40,*) 'set ylabel "Pf"'
     write(40,*) 'set yrange [-0.001:0.001]'
+    write(40,*) 'plot "data/convergence.txt" u 1:2 title "Failure Probability" with lines'
+    close(40)
+
+    call system('gnuplot data/plotConvergence.plt')
+    write(*,*) "Convergence plotted"
+end subroutine
+
+subroutine plotPdf
+    open(40,file='data/plotPdf.plt')
+    write(40,*) 'set terminal pngcairo enhanced font "Verdana,10"'
+    write(40,*) 'set output "data/pdf.png"'
+    write(40,*) 'set xlabel "X1"'
+    write(40,*) 'set ylabel "X2"'
+    write(40,*) 'set pm3d map impl'
+    write(40,*) 'set contour'
+    write(40,*) 'set style increment user'
+    write(40,*) 'do for [i=1:18] { set style line i lc rgb "black"}'
+    write(40,*) 'set cntrparam levels incr -0.3,0.1,0.5'
+    write(40,*) 'set autoscale fix'
+    write(40,*) 'splot "test.txt" w pm3d notitle'
+
     write(40,*) 'plot "data/convergence.txt" u 1:2 title "Failure Probability" with lines'
     close(40)
 

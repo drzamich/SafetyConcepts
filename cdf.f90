@@ -90,3 +90,10 @@ real function pdf(a,b,mx,sx,x,x0,t)
     end select
 
 end function
+
+real function pdfn(mx,sx,x)
+    implicit none
+    real mx,sx,x,pi
+    pi=3.1415926535
+    pdfn=(1/(sx*sqrt(2*pi)))*exp(-0.5*((x-mx)/sx)**2)
+end function
