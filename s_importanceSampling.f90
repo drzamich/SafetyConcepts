@@ -3,9 +3,8 @@ subroutine importanceSampling
 implicit none
 
 real a1,a2,b1,b2,mx1,mx2,sx1,sx2,x1,x2,x01,x02,q1,q2
-integer size1,i,count, t1,t2
+integer size1,i, t1,t2
 real u
-!real x1,x2
 real inv_cdf, pdf
 real failureFunction
 real charts
@@ -19,13 +18,33 @@ real x1x1, x1x2, x2x1, x2x2, x1x1_temp,x1x2_temp,x2x1_temp,x2x2_temp
 real pdf_cur, pdf_max
 real curx1, curx2
 real u1
+real part1, part2, part3
+real h
+real indicator
+
+real, allocatable:: iterationSamples(:)  !array which keeps number of sampled points in each iteration
+real, allocatable:: iterationProbability(:) !array which keeps the value of probability in each iteration
+real, allocatable:: allSampledPoints(:,:,:)
+real maxPoints !maximal number of points to be generated in each iteration
+real, allocatable:: h_params(:,:)
 
 real, allocatable:: sampledPoints(:,:)
+integer totalSampled
+integer sampledThisIter
 
-samplingPoints=10
-maxIter=1
+samplingPoints=20  !points sampled in one iteration
+maxIter=15   !maximal number of iterations
+maxPoints=1000
 
-allocate(sampledPoints(samplingPoints,2))
+allocate(iterationSamples(maxIter))
+allocate(iterationProbability(maxIter))
+allocate(allSampledPoints(maxIter,maxPoints,2))
+allocate(h_params(maxIter,6))
+
+
+iterationSamples=0.0
+iterationProbability=0.0
+allSampledPoints=0.0
 
 !default parameters of x1
 t1=5 !exponential
@@ -70,22 +89,40 @@ x1x2=init1x2  !1st point vertical
 x2x1=init2x1  !2nd point horizontal
 x2x2=init2x2  !2nd point vertical
 
+
 !clearing the data files
-open(10,file='data/sampledPoints.txt',access='sequential')
+open(10,file='data/sampledPoints.txt',access='sequential')  !file for keeping points sampled in current iteration
 write(10,*)
 close(10)
 
-open(10,file='data/rootPoints.txt',access='sequential')
+open(10,file='data/rootPointsX1.txt',access='sequential')
 write(10,*)
 close(10)
 
+open(10,file='data/rootPointsX2.txt',access='sequential')
+write(10,*)
+close(10)
+
+!writing the initial sampled points in the file
+open(10,file='data/rootPointsX1.txt',access='append')
+write(10,*) x1x1, x1x2
+close(10)
+
+open(10,file='data/rootPointsX2.txt',access='append')
+write(10,*) x2x1, x2x2
+close(10)
+
+
+call plotSampling(0)
+!allocate(sampledPoints(samplingPoints,2))
+!
+!
+!  START OF THE ITERATION
+!
+!
 
 do iter=1,maxIter
 
-open(10,file='data/rootPoints.txt',access='append')
-write(10,*) x1x1, x1x2
-write(10,*) x2x1, x2x2
-close(10)
 
 if((pdf(a1,b1,mx1,sx1,init1x1,x01,t1)*pdf(a2,b2,mx2,sx2,init1x2,x02,t2)).lt.&
    (pdf(a1,b1,mx1,sx1,init2x1,x01,t1)*pdf(a2,b2,mx2,sx2,init2x2,x02,t2))) then
@@ -104,6 +141,15 @@ omega2=(pdf(a1,b1,mx1,sx1,x2x1,x01,t1)*pdf(a2,b2,mx2,sx2,x2x2,x02,t2))/&
         (pdf(a1,b1,mx1,sx1,x1x1,x01,t1)*pdf(a2,b2,mx2,sx2,x1x2,x02,t2)+&
         pdf(a1,b1,mx1,sx1,x2x1,x01,t1)*pdf(a2,b2,mx2,sx2,x2x2,x02,t2))
 
+h_params(iter,1)=omega1
+h_params(iter,2)=omega2
+h_params(iter,3) = x1x1
+h_params(iter,4) = x1x2
+h_params(iter,5) = x2x1
+h_params(iter,6) = x2x2
+
+
+
 write(*,*) "omega1:", omega1
 write(*,*) "omega2:", omega2
 
@@ -118,40 +164,61 @@ write(*,*) "Sampling points x1: ", samplingPointsx1
 write(*,*) "Sampling points x2: ", samplingPointsx2
 
 
+!generating sampling points
+
 do i=1,samplingPointsx1
     call random_number(u)
-    sampledPoints(i,1) = inv_cdfn(x1x1,sx1,u)
+    allSampledPoints(iter,i,1) = inv_cdfn(x1x1,sx1,u)
 
     call random_number(u)
-    sampledPoints(i,2) = inv_cdfn(x1x2,sx2,u)
+    allSampledPoints(iter,i,2) = inv_cdfn(x1x2,sx2,u)
 end do
 
 do i=1,samplingPointsx2
     call random_number(u)
-    sampledPoints(i+samplingPointsx1,1) = inv_cdfn(x2x1,sx1,u)
+    allSampledPoints(iter,i+samplingPointsx1,1) = inv_cdfn(x2x1,sx1,u)
 
     call random_number(u)
-    sampledPoints(i+samplingPointsx1,2) = inv_cdfn(x2x2,sx2,u)
+    allSampledPoints(iter,i+samplingPointsx1,2) = inv_cdfn(x2x2,sx2,u)
 end do
 
+totalSampled = totalSampled+samplingPointsx1+samplingPointsx2
+sampledThisIter=samplingPointsx1+samplingPointsx2
 
-!writing just sampled points in the file
-open(11,file='data/sampledPoints.txt',access='append')
 
-do j=1,samplingPoints
-    write(11,*) sampledPoints(j,1), sampledPoints(j,2)
+if(iter.ne.1) then
+
+part3=0.0
+
+do u=1,iter
+    do i=1,sampledThisIter
+        part1=0.0
+        do j=1,iter
+            part1=part1+(iterationSamples(j)/totalSampled)*&
+                        h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
+                        sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2))
+        end do
+        part2=part2+&
+            (indicator(allSampledPoints(u,i,1),allSampledPoints(u,i,2))*&
+                pdf(a1,b1,mx1,sx1,allSampledPoints(u,i,1),x01,t1)*pdf(a2,b2,mx2,sx2,allSampledPoints(u,i,2),x02,t2))/&
+                    part1
+    end do
+    part3=part3+part2
 end do
 
+iterationProbability(iter) = part3/totalSampled
 
+write(*,*) "probability: ", iterationProbability(iter)
+end if
 
 
 !looking in the sampled points one, with maximal pdf value, which will be the initial point for the next iteration step
-pdf_max=0
-x1x1_temp=0.0
-x1x2_temp=0.0
-do k=1,samplingPoints
-    curx1=sampledPoints(k,1)
-    curx2=sampledPoints(k,2)
+pdf_max=0.0
+curx1=0.0
+curx2=0.0
+do k=1,sampledThisIter
+    curx1=allSampledPoints(iter,k,1)
+    curx2=allSampledPoints(iter,k,2)
     if(failureFunction(curx1,curx2).le.0.0) then
         pdf_cur=pdf(a1,b1,mx1,sx1,curx1,x01,t1)*pdf(a2,b2,mx2,sx2,curx2,x02,t2)
         if(pdf_cur.gt.pdf_max) then
@@ -162,9 +229,19 @@ do k=1,samplingPoints
     end if
 end do
 
-if((x1x1_temp==0.0).and.(x1x2_temp==0.0)) then !if no suitable point was found
+
+!if no suitable point was found
+!if((x1x1_temp==0.0).and.(x1x2_temp==0.0)) then
+!    write(*,*) 'No suitable point was found. Increase the number of sampled points in the configuration file and try again.'
+!    return !exiting the subroutine
+!end if
+
+!if no suitable point was found
+if((x1x1_temp==0.0).and.(x1x2_temp==0.0)) then
     call random_number(u1)
     do k=1,10000
+        sampledThisIter=sampledThisIter+1
+        totalSampled=totalSampled+1
         if(u1.lt.omega1) then !generation of new point accoring to point x1
 
             call random_number(u)
@@ -173,15 +250,16 @@ if((x1x1_temp==0.0).and.(x1x2_temp==0.0)) then !if no suitable point was found
             call random_number(u)
             curx2 = inv_cdfn(x1x2,sx2,u)
 
-        else !generation of new point accoring to point x2
-            call random_number(u)
+       else !generation of new point accoring to point x2
+           call random_number(u)
             curx1 = inv_cdfn(x2x1,sx1,u)
 
             call random_number(u)
             curx2 = inv_cdfn(x2x2,sx2,u)
         end if
 
-        write(11,*) curx1,curx2  !writing the sampled points to the file
+        allSampledPoints(iter,sampledThisIter,1)=curx1
+        allSampledPoints(iter,sampledThisIter,2)=curx2  !writing the sampled points to the file sampledPoints.txt
         !new point generated. checking if its okay with our prerequisites
         if(failureFunction(curx1,curx2).le.0.0) then
             x1x1_temp=curx1
@@ -191,29 +269,85 @@ if((x1x1_temp==0.0).and.(x1x2_temp==0.0)) then !if no suitable point was found
     end do
 end if
 
+!assigning the new initial points to its variable
 x1x1=x1x1_temp
 x1x2=x1x2_temp
 
 !looking in the sampled points a point for x2
 pdf_max=0
-do k=1,samplingPoints
-    curx1=sampledPoints(k,1)
-    curx2=sampledPoints(k,2)
+x2x1_temp=0.0
+x2x2_temp=0.0
+do k=1,sampledThisIter
+    curx1=allSampledPoints(iter,k,1)
+    curx2=allSampledPoints(iter,k,2)
     if((curx1.ne.x1x1).and.(curx2.ne.x1x2)) then  !excluding the already chosen point
         if(failureFunction(curx1,curx2).le.0.0) then  !searching only in the failure domain
-            if((abs(curx1-x1x1).gt.0.9*sx1).and.(abs(curx2-x1x2).gt.0.9*sx2)) then  !searching only for points outside the cuboid
+            if((abs(curx1-x1x1).gt.0.3*sx1).and.(abs(curx2-x1x2).gt.0.3*sx2)) then  !searching only for points outside the cuboid
                 pdf_cur=pdf(a1,b1,mx1,sx1,curx1,x01,t1)*pdf(a2,b2,mx2,sx2,curx2,x02,t2)
                 if(pdf_cur.gt.pdf_max) then
                     pdf_max=pdf_cur
-                    x2x1=curx1
-                    x2x2=curx2
+                    x2x1_temp=curx1
+                    x2x2_temp=curx2
                 end if
             end if
         end if
     end if
 end do
 
-close(11) !samplingPoints
+!if no suitable point was found
+if((x2x1_temp==0.0).and.(x2x2_temp==0.0)) then
+    call random_number(u1)
+    do k=1,10000
+        sampledThisIter=sampledThisIter+1
+        totalSampled=totalSampled+1
+        if(u1.lt.omega1) then !generation of new point accoring to point x1
+
+            call random_number(u)
+            curx1 = inv_cdfn(x1x1,sx1,u)
+
+            call random_number(u)
+            curx2 = inv_cdfn(x1x2,sx2,u)
+
+       else !generation of new point accoring to point x2
+           call random_number(u)
+            curx1 = inv_cdfn(x2x1,sx1,u)
+
+            call random_number(u)
+            curx2 = inv_cdfn(x2x2,sx2,u)
+        end if
+
+        allSampledPoints(iter,sampledThisIter,1)=curx1
+        allSampledPoints(iter,sampledThisIter,2)=curx2  !writing the sampled points to the file sampledPoints.txt
+        !new point generated. checking if its okay with our prerequisites
+        if(failureFunction(curx1,curx2).le.0.0) then
+            if((abs(curx1-x1x1).gt.0.9*sx1).and.(abs(curx2-x1x2).gt.0.9*sx2)) then  !searching only for points outside the cuboid of the 1st point sampled before
+                x2x1_temp=curx1
+                x2x2_temp=curx2
+                exit
+            end if
+        end if
+    end do
+end if
+
+x2x1 = x2x1_temp
+x2x2 = x2x2_temp
+
+open(10,file='data/rootPointsX1.txt',access='append')
+write(10,*) x1x1, x1x2
+close(10)
+open(10,file='data/rootPointsX2.txt',access='append')
+write(10,*) x2x1, x2x2
+close(10)
+
+open(11,file='data/sampledPoints.txt',access='append')
+do j=1,samplingPoints
+    write(11,*)  allSampledPoints(iter,j,1), allSampledPoints(iter,j,2)
+end do
+close(11) !sampledPoints.txt
+
+iterationSamples(iter) = sampledThisIter
+
+
 call plotSampling(iter)
 end do
 end subroutine
@@ -232,17 +366,29 @@ open(40,file='data/plotSampling.plt')
     write(40,*) 'set xlabel "X1"'
     write(40,*) 'set ylabel "X2"'
     write(40,*) 'plot g(x) title "g(x1,x2)=0" ls 1,\'
-    write(40,*) '"data/rootPoints.txt" u 1:2 title "Root points",\'
-    write(40,*) '"data/sampledPoints.txt" u 1:2 title "Sampled points"'
+    write(40,*) '"data/sampledPoints.txt" u 1:2 title "Sampled points",\'
+    write(40,*) '"data/rootPointsX1.txt" u 1:2 title "X1 root points",\'
+    write(40,*) '"data/rootPointsX2.txt" u 1:2 title "X2 root points"'
 close(40)
 
     call system('gnuplot data/plotSampling.plt')
 
 end subroutine
 
-real function h(omega1,omega2,x1x1,x1x2,x2x1,x2x2,mx1_x1,mx2_x1,mx1_x2,mx2_x2,sx1,sx2)
-    real omega1,omega2,x1x1,x1x2,x2x1,x2x2,mx1_x1,mx2_x1,mx1_x2,mx2_x2,sx1,sx2
+real function h(omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2)
+    real omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2
 
-    h=omega1*pdfn(mx1_x1,sx1,x1x1)*pdfn(mx2_x1,sx2,x1x2)+&
-      omega2*pdfn(mx1_x2,sx1,x2x1)*pdfn(mx2_x2,sx2,x2x2)
+    h=omega1*pdfn(x1x1,sx1,x1)*pdfn(x1x2,sx2,x2)+&
+      omega2*pdfn(x2x1,sx1,x1)*pdfn(x2x2,sx2,x2)
+
+end function
+
+
+real function indicator(x1,x2)
+    real x1, x2, failureFunction
+    if(failureFunction(x1,x2).le.0.0) then
+        indicator=1.0
+    else
+        indicator=0.0
+    end if
 end function
