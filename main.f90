@@ -15,5 +15,7 @@ program main
 
     !call failureProbability
 
+    call readFileNew
+
     call importanceSampling
 end

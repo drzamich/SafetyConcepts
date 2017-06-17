@@ -25,3 +25,4 @@ compile.bat
 *.txt
 
 fort.10
+!inputFailure.txt

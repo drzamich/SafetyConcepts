@@ -1,0 +1,26 @@
+! Properties of random variable X1
+6           t1   (1=uniform, 2=standard normal, 3=normal, 4=log-normal, 5=exponen, 6=ex-maxI)
+1.0         a1
+10.0        b1
+50.0        mx1
+5.0         sx1
+0.3         x01
+
+! Properties of random variable X2
+4 t2        (1=uniform, 2=standard normal, 3=normal, 4=log-normal, 5=exponen, 6=ex-maxI)
+2.0         a2
+2.5         b2
+288000.0    mx2
+26400.0     sx2
+199000.0    x02
+
+! Properties of sampling in Adaptive Importance approach
+100         points sampled in one iteration
+70.0        x1 coordinate of the first initial point
+0.005        eps
+100           maxIter
+300         maxPoints
+
+! Properties of the failure function  g(x) = c1*x1+c2*x2
+-3278.68     c1: parameter next to x1
+1            c2: parameter next to x2

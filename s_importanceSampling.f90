@@ -1,41 +1,35 @@
 subroutine importanceSampling
-
+use variables
 implicit none
 
-real a1,a2,b1,b2,mx1,mx2,sx1,sx2,x1,x2,x01,x02,q1,q2
-integer size1,i, t1,t2
 real u
 real inv_cdf, pdf
 real failureFunction
-real charts
 real init1x1, init1x2, init2x1, init2x2, temp1,temp2
 real omega1, omega2
-integer samplingPoints, samplingPointsx1, samplingPointsx2
+integer samplingPointsx1, samplingPointsx2
 real inv_cdfn
-integer j,k,l
-integer maxIter, iter
+integer i,j,k,l
+integer iter
 real x1x1, x1x2, x2x1, x2x2, x1x1_temp,x1x2_temp,x2x1_temp,x2x2_temp
 real pdf_cur, pdf_max
 real curx1, curx2
 real u1
 real part1, part2, part3
-real h
 real indicator, indicator_val, pdf_xi1, pdf_xi2
-real haha
+real h_val
 
 real, allocatable:: iterationSamples(:)  !array which keeps number of sampled points in each iteration
 real, allocatable:: iterationProbability(:) !array which keeps the value of probability in each iteration
 real, allocatable:: allSampledPoints(:,:,:)
-real maxPoints !maximal number of points to be generated in each iteration
 real, allocatable:: h_params(:,:)
 
 real, allocatable:: sampledPoints(:,:)
 integer totalSampled
 integer sampledThisIter
+real previousProbability
 
-samplingPoints=10  !points sampled in one iteration
-maxIter=200  !maximal number of iterations
-maxPoints=1000
+integer passInARow
 
 allocate(iterationSamples(maxIter))
 allocate(iterationProbability(maxIter))
@@ -47,46 +41,13 @@ iterationSamples=0.0
 iterationProbability=0.0
 allSampledPoints=0.0
 totalSampled=0
-
-
-!actual parameters
-t1=6 !ex-max type1
-mx1=50.0
-sx1=5.0
-
-
-!default parameters of x2
-t2=1
-a2= 2.0
-b2= 2.5
-mx2= 1.0
-sx2= 0.4
-x2= 2.3
-x02= 2.3
-q2= 9.3
-
-
-!actual parameters
-t1=6 !ex-max type1
-mx1=50.0
-sx1=5.0
-
-t2=4 !log-normal distr
-mx2=28.8*10**4
-sx2=2.64*10**4
-x02=19.9*10**4
-
+passInARow=0
 
 !initial points
-init1x1=70
-init1x2=3278*init1x1
-init2x1=init1x1+0.5*sx1
-init2x2=3278*init2x1
-
-x1x1=init1x1  !1st point horizontal
-x1x2=init1x2  !1st point vertical
-x2x1=init2x1  !2nd point horizontal
-x2x2=init2x2  !2nd point vertical
+x1x1=x1_init
+x1x2=c1_r*0.99*x1x1
+x2x1=x1x1+0.9*sx1
+x2x2=c1_r*0.99*x2x1
 
 !clearing the data files
 open(10,file='data/sampledPoints.txt',access='sequential')  !file for keeping points sampled in current iteration
@@ -112,7 +73,7 @@ close(10)
 
 
 call plotSampling(0)
-!allocate(sampledPoints(samplingPoints,2))
+
 !
 !
 !  START OF THE ITERATION
@@ -120,15 +81,7 @@ call plotSampling(0)
 !
 
 do iter=1,maxIter
-    write(*,*) iter
 sampledThisIter=0
-
-if((pdf(a1,b1,mx1,sx1,init1x1,x01,t1)*pdf(a2,b2,mx2,sx2,init1x2,x02,t2)).lt.&
-   (pdf(a1,b1,mx1,sx1,init2x1,x01,t1)*pdf(a2,b2,mx2,sx2,init2x2,x02,t2))) then
-   write(*,*) "Changing"
-   temp1=init1x1
-   temp2=init1x2
-end if
 
 omega1=(pdf(a1,b1,mx1,sx1,x1x1,x01,t1)*pdf(a2,b2,mx2,sx2,x1x2,x02,t2))/&
         (pdf(a1,b1,mx1,sx1,x1x1,x01,t1)*pdf(a2,b2,mx2,sx2,x1x2,x02,t2)+&
@@ -145,20 +98,10 @@ h_params(iter,4) = x1x2
 h_params(iter,5) = x2x1
 h_params(iter,6) = x2x2
 
-
-
-write(*,*) "omega1:", omega1
-write(*,*) "omega2:", omega2
-
-!problem here: if the values of pdfs are too small, the omega isn't calculated
 !therefore the choice of the starting point is important
 
-write(*,*) "omega1+2", omega1+omega2
 samplingPointsx1=nint(samplingPoints*omega1)  !rounds to the nearest whole number
 samplingPointsx2=nint(samplingPoints*omega2)
-
-write(*,*) "Sampling points x1: ", samplingPointsx1
-write(*,*) "Sampling points x2: ", samplingPointsx2
 
 
 !generating sampling points
@@ -183,6 +126,24 @@ totalSampled = totalSampled+samplingPointsx1+samplingPointsx2
 sampledThisIter=samplingPointsx1+samplingPointsx2
 iterationSamples(iter) = sampledThisIter
 
+
+if(iter==1) then
+    part1=0.0
+do i=1,sampledThisIter
+    j=1
+        call h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
+                        sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2),h_val)
+        pdf_xi1=pdf(a1,b1,mx1,sx1,allSampledPoints(1,i,1),x01,t1)
+        pdf_xi2=pdf(a2,b2,mx2,sx2,allSampledPoints(1,i,2),x02,t2)
+        indicator_val=indicator(allSampledPoints(1,i,1),allSampledPoints(1,i,2))
+        part1=part1+(indicator_val*pdf_xi1*pdf_xi2)/h_val
+end do
+
+iterationProbability(iter) = part1/sampledThisIter
+
+end if
+
+
 if(iter.ne.1) then
 
 part3=0.0
@@ -192,33 +153,11 @@ do u=1,iter
         do i=1,iterationSamples(u)
         part1=0.0
         do j=1,iter
-                        call h_test(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
-                        sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2),haha)
-                        part1=part1+(iterationSamples(j)/totalSampled)*haha
-                        !h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
-                        !sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2))
-
-
-
-                        !write(*,*) "parameters of h function"
-                        !write(*,*) "omega1", h_params(j,1)
-                        !write(*,*) "omega2", h_params(j,2)
-                        !write(*,*) "x1x1", h_params(j,3)
-                        !write(*,*) "x1x2", h_params(j,4)
-                        !write(*,*) "x2x1", h_params(j,5)
-                        !write(*,*) "x2x2", h_params(j,6)
-                        !write(*,*) "Checked point:"
-                        !write(*,*) "x1:", allSampledPoints(u,i,1)
-                        !write(*,*) "x2:", allSampledPoints(u,i,2)
-                        !write(*,*) "h:", h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
-                        !sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2))
-
-                        !write(*,*) "h:", haha
+                        call h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
+                        sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2),h_val)
+                        part1=part1+(iterationSamples(j)/totalSampled)*h_val
 
         end do
-        !write(*,*) "part1: ", part1
-            !write(*,*) "x1:", allSampledPoints(u,i,1)
-            !write(*,*) "x2:", allSampledPoints(u,i,2)
             indicator_val=indicator(allSampledPoints(u,i,1),allSampledPoints(u,i,2))
             pdf_xi1=pdf(a1,b1,mx1,sx1,allSampledPoints(u,i,1),x01,t1)
             pdf_xi2=pdf(a2,b2,mx2,sx2,allSampledPoints(u,i,2),x02,t2)
@@ -228,21 +167,25 @@ do u=1,iter
             if(isnan(pdf_xi2)) then
                 pdf_xi2=0.0
             end if
-            !write(*,*) "x1: ", allSampledPoints(u,i,1)
-            !write(*,*) "x2: ", allSampledPoints(u,i,2)
-            !write(*,*) "indicator:", indicator_val
-            !write(*,*) "pdf1:", pdf_xi1
-            !write(*,*) "pdf2:", pdf_xi2
         part2=part2+((indicator_val*pdf_xi1*pdf_xi2)/part1)
-        !write(*,*) "part2: ", part2
-
     end do
     part3=part3+part2
 end do
 
 iterationProbability(iter) = part3/totalSampled
 
+end if
+
 write(*,*) "probability: ", iterationProbability(iter)
+
+previousProbability=iterationProbability(iter-1)
+if((previousProbability-eps*previousProbability).lt.iterationProbability(iter)&
+    .and.(previousProbability+eps*previousProbability).gt.iterationProbability(iter)) then
+    passInARow=passInARow+1
+    if(passInARow==5) then
+        write(*,*) "Final failure probability:", iterationProbability(iter)
+        exit
+    end if
 end if
 
 
@@ -263,12 +206,6 @@ do k=1,sampledThisIter
     end if
 end do
 
-
-!if no suitable point was found
-!if((x1x1_temp==0.0).and.(x1x2_temp==0.0)) then
-!    write(*,*) 'No suitable point was found. Increase the number of sampled points in the configuration file and try again.'
-!    return !exiting the subroutine
-!end if
 
 !if no suitable point was found
 if((x1x1_temp==0.0).and.(x1x2_temp==0.0)) then
@@ -316,7 +253,7 @@ do k=1,sampledThisIter
     curx2=allSampledPoints(iter,k,2)
     if((curx1.ne.x1x1).and.(curx2.ne.x1x2)) then  !excluding the already chosen point
         if(failureFunction(curx1,curx2).le.0.0) then  !searching only in the failure domain
-            if((abs(curx1-x1x1).gt.0.3*sx1).and.(abs(curx2-x1x2).gt.0.3*sx2)) then  !searching only for points outside the cuboid
+            if((abs(curx1-x1x1).gt.0.9*sx1).and.(abs(curx2-x1x2).gt.0.9*sx2)) then  !searching only for points outside the cuboid
                 pdf_cur=pdf(a1,b1,mx1,sx1,curx1,x01,t1)*pdf(a2,b2,mx2,sx2,curx2,x02,t2)
                 if(pdf_cur.gt.pdf_max) then
                     pdf_max=pdf_cur
@@ -382,7 +319,7 @@ close(11) !sampledPoints.txt
 iterationSamples(iter) = sampledThisIter
 
 
-call plotSampling(iter)
+!call plotSampling(iter)
 end do
 end subroutine
 
@@ -409,77 +346,29 @@ close(40)
 
 end subroutine
 
-real function h(omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2)
+
+subroutine h(omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2,res)
     real omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2
     real pdfn1, pdfn2, pdfn3, pdfn4
-    real h_temp
-
-    pdfn1=pdfn(x1x1,sx1,x1)
-    pdfn2=pdfn(x1x2,sx2,x2)
-    pdfn3=pdfn(x2x1,sx1,x1)
-    pdfn4=pdfn(x2x2,sx2,x2)
-    if(isnan(pdfn1)) then
-        pdfn1=0.0
-    end if
-    if(isnan(pdfn2)) then
-        pdfn2=0.0
-    end if
-    if(isnan(pdfn3)) then
-        pdfn2=0.0
-    end if
-    if(isnan(pdfn4)) then
-        pdfn2=0.0
-    end if
-
-    h_temp=omega1*pdfn1*pdfn2+omega2*pdfn3*pdfn4
-    if(isnan(h_temp)) then
-        h=0.0
-    else
-        h=t_temp
-    end if
-
-end function
-
-subroutine h_test(omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2,test_val)
-    real omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2
-    real pdfn1, pdfn2, pdfn3, pdfn4
-    real h_temp
-    real test_val
-    real h
+    real res, res_temp
 
     pdfn1=pdfn(x1x1,sx1,x1)
     pdfn2=pdfn(x1x2,sx2,x2)
     pdfn3=pdfn(x2x1,sx1,x1)
     pdfn4=pdfn(x2x2,sx2,x2)
 
-    !write(*,*) "pdfn1:", pdfn1
-    !write(*,*) "pdfn2:", pdfn2
-    !write(*,*) "pdfn3:", pdfn3
-    !write(*,*) "pdfn4:", pdfn4
-    !write(*,*) "omega1:", omega1
-    !write(*,*) "omega2:", omega2
-    if(isnan(pdfn1)) then
-        pdfn1=0.0
-    end if
-    if(isnan(pdfn2)) then
-        pdfn2=0.0
-    end if
-    if(isnan(pdfn3)) then
-        pdfn2=0.0
-    end if
-    if(isnan(pdfn4)) then
-        pdfn2=0.0
-    end if
+    if(isnan(pdfn1)) pdfn1=0.0
+    if(isnan(pdfn2)) pdfn2=0.0
+    if(isnan(pdfn3)) pdfn2=0.0
+    if(isnan(pdfn4)) pdfn2=0.0
 
-    h_temp=omega1*pdfn1*pdfn2+omega2*pdfn3*pdfn4
-    !write(*,*) "h_temp from test subroutine:", h_temp
+    res_temp=omega1*pdfn1*pdfn2+omega2*pdfn3*pdfn4
+
     if(isnan(h_temp)) then
-        h=0.0
-    else
-        h=t_temp
+        res_temp=0.0
     end if
 
-    test_val=h_temp
+    res=res_temp
 
 end subroutine
 
