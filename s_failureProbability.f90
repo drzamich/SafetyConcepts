@@ -10,7 +10,7 @@ real failureFunction
 real charts
 
 count=0
-size1=1000
+size1=100000  !total number of sampled points
 charts=5
 
 
@@ -52,7 +52,6 @@ sx2=2.64*10**4
 x02=19.9*10**4
 
 charts = size1/charts
-
 !clearing the data files
 
         open(20,file='data/pointsSurvival.txt',access='sequential')
@@ -82,12 +81,13 @@ do i=1,size1
 	if(failureFunction(x1,x2).lt.0.0) then
 		count=count+1
 		write(21,*) x1,x2  !failure
+		write(*,*) "failure prob2.: TEST pdf1 of failure:", pdf(a1,b1,mx1,sx1,72.138,x01,t1)
     else
 		write(20,*) x1,x2   !survival
 	end if
 
 	if(mod(real(i),charts)==0.0) then
-        !call plotFailure(i)
+        call plotFailure(i)
     end if
 
     write(30,*) i, real(count)/real(i)

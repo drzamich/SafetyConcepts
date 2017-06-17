@@ -20,7 +20,8 @@ real curx1, curx2
 real u1
 real part1, part2, part3
 real h
-real indicator
+real indicator, indicator_val, pdf_xi1, pdf_xi2
+real haha
 
 real, allocatable:: iterationSamples(:)  !array which keeps number of sampled points in each iteration
 real, allocatable:: iterationProbability(:) !array which keeps the value of probability in each iteration
@@ -32,8 +33,8 @@ real, allocatable:: sampledPoints(:,:)
 integer totalSampled
 integer sampledThisIter
 
-samplingPoints=20  !points sampled in one iteration
-maxIter=15   !maximal number of iterations
+samplingPoints=10  !points sampled in one iteration
+maxIter=200  !maximal number of iterations
 maxPoints=1000
 
 allocate(iterationSamples(maxIter))
@@ -45,16 +46,14 @@ allocate(h_params(maxIter,6))
 iterationSamples=0.0
 iterationProbability=0.0
 allSampledPoints=0.0
+totalSampled=0
 
-!default parameters of x1
-t1=5 !exponential
-a1= 1.0
-b1= 10.0
-mx1= 0.4
-sx1= 0.2
-x1= 0.1
-x01= 0.3
-q1= 0.3
+
+!actual parameters
+t1=6 !ex-max type1
+mx1=50.0
+sx1=5.0
+
 
 !default parameters of x2
 t2=1
@@ -72,7 +71,7 @@ t1=6 !ex-max type1
 mx1=50.0
 sx1=5.0
 
-t2=4
+t2=4 !log-normal distr
 mx2=28.8*10**4
 sx2=2.64*10**4
 x02=19.9*10**4
@@ -88,7 +87,6 @@ x1x1=init1x1  !1st point horizontal
 x1x2=init1x2  !1st point vertical
 x2x1=init2x1  !2nd point horizontal
 x2x2=init2x2  !2nd point vertical
-
 
 !clearing the data files
 open(10,file='data/sampledPoints.txt',access='sequential')  !file for keeping points sampled in current iteration
@@ -122,7 +120,8 @@ call plotSampling(0)
 !
 
 do iter=1,maxIter
-
+    write(*,*) iter
+sampledThisIter=0
 
 if((pdf(a1,b1,mx1,sx1,init1x1,x01,t1)*pdf(a2,b2,mx2,sx2,init1x2,x02,t2)).lt.&
    (pdf(a1,b1,mx1,sx1,init2x1,x01,t1)*pdf(a2,b2,mx2,sx2,init2x2,x02,t2))) then
@@ -130,8 +129,6 @@ if((pdf(a1,b1,mx1,sx1,init1x1,x01,t1)*pdf(a2,b2,mx2,sx2,init1x2,x02,t2)).lt.&
    temp1=init1x1
    temp2=init1x2
 end if
-
-write(*,*) failureFunction(init1x1,init1x2), failureFunction(init2x1,init2x2)
 
 omega1=(pdf(a1,b1,mx1,sx1,x1x1,x01,t1)*pdf(a2,b2,mx2,sx2,x1x2,x02,t2))/&
         (pdf(a1,b1,mx1,sx1,x1x1,x01,t1)*pdf(a2,b2,mx2,sx2,x1x2,x02,t2)+&
@@ -184,24 +181,61 @@ end do
 
 totalSampled = totalSampled+samplingPointsx1+samplingPointsx2
 sampledThisIter=samplingPointsx1+samplingPointsx2
-
+iterationSamples(iter) = sampledThisIter
 
 if(iter.ne.1) then
 
 part3=0.0
 
 do u=1,iter
-    do i=1,sampledThisIter
+        part2=0
+        do i=1,iterationSamples(u)
         part1=0.0
         do j=1,iter
-            part1=part1+(iterationSamples(j)/totalSampled)*&
-                        h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
-                        sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2))
+                        call h_test(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
+                        sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2),haha)
+                        part1=part1+(iterationSamples(j)/totalSampled)*haha
+                        !h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
+                        !sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2))
+
+
+
+                        !write(*,*) "parameters of h function"
+                        !write(*,*) "omega1", h_params(j,1)
+                        !write(*,*) "omega2", h_params(j,2)
+                        !write(*,*) "x1x1", h_params(j,3)
+                        !write(*,*) "x1x2", h_params(j,4)
+                        !write(*,*) "x2x1", h_params(j,5)
+                        !write(*,*) "x2x2", h_params(j,6)
+                        !write(*,*) "Checked point:"
+                        !write(*,*) "x1:", allSampledPoints(u,i,1)
+                        !write(*,*) "x2:", allSampledPoints(u,i,2)
+                        !write(*,*) "h:", h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
+                        !sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2))
+
+                        !write(*,*) "h:", haha
+
         end do
-        part2=part2+&
-            (indicator(allSampledPoints(u,i,1),allSampledPoints(u,i,2))*&
-                pdf(a1,b1,mx1,sx1,allSampledPoints(u,i,1),x01,t1)*pdf(a2,b2,mx2,sx2,allSampledPoints(u,i,2),x02,t2))/&
-                    part1
+        !write(*,*) "part1: ", part1
+            !write(*,*) "x1:", allSampledPoints(u,i,1)
+            !write(*,*) "x2:", allSampledPoints(u,i,2)
+            indicator_val=indicator(allSampledPoints(u,i,1),allSampledPoints(u,i,2))
+            pdf_xi1=pdf(a1,b1,mx1,sx1,allSampledPoints(u,i,1),x01,t1)
+            pdf_xi2=pdf(a2,b2,mx2,sx2,allSampledPoints(u,i,2),x02,t2)
+            if(isnan(pdf_xi1)) then
+                pdf_xi1=0.0
+            end if
+            if(isnan(pdf_xi2)) then
+                pdf_xi2=0.0
+            end if
+            !write(*,*) "x1: ", allSampledPoints(u,i,1)
+            !write(*,*) "x2: ", allSampledPoints(u,i,2)
+            !write(*,*) "indicator:", indicator_val
+            !write(*,*) "pdf1:", pdf_xi1
+            !write(*,*) "pdf2:", pdf_xi2
+        part2=part2+((indicator_val*pdf_xi1*pdf_xi2)/part1)
+        !write(*,*) "part2: ", part2
+
     end do
     part3=part3+part2
 end do
@@ -377,11 +411,77 @@ end subroutine
 
 real function h(omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2)
     real omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2
+    real pdfn1, pdfn2, pdfn3, pdfn4
+    real h_temp
 
-    h=omega1*pdfn(x1x1,sx1,x1)*pdfn(x1x2,sx2,x2)+&
-      omega2*pdfn(x2x1,sx1,x1)*pdfn(x2x2,sx2,x2)
+    pdfn1=pdfn(x1x1,sx1,x1)
+    pdfn2=pdfn(x1x2,sx2,x2)
+    pdfn3=pdfn(x2x1,sx1,x1)
+    pdfn4=pdfn(x2x2,sx2,x2)
+    if(isnan(pdfn1)) then
+        pdfn1=0.0
+    end if
+    if(isnan(pdfn2)) then
+        pdfn2=0.0
+    end if
+    if(isnan(pdfn3)) then
+        pdfn2=0.0
+    end if
+    if(isnan(pdfn4)) then
+        pdfn2=0.0
+    end if
+
+    h_temp=omega1*pdfn1*pdfn2+omega2*pdfn3*pdfn4
+    if(isnan(h_temp)) then
+        h=0.0
+    else
+        h=t_temp
+    end if
 
 end function
+
+subroutine h_test(omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2,test_val)
+    real omega1,omega2,x1x1,x1x2,x2x1,x2x2,sx1,sx2,x1,x2
+    real pdfn1, pdfn2, pdfn3, pdfn4
+    real h_temp
+    real test_val
+    real h
+
+    pdfn1=pdfn(x1x1,sx1,x1)
+    pdfn2=pdfn(x1x2,sx2,x2)
+    pdfn3=pdfn(x2x1,sx1,x1)
+    pdfn4=pdfn(x2x2,sx2,x2)
+
+    !write(*,*) "pdfn1:", pdfn1
+    !write(*,*) "pdfn2:", pdfn2
+    !write(*,*) "pdfn3:", pdfn3
+    !write(*,*) "pdfn4:", pdfn4
+    !write(*,*) "omega1:", omega1
+    !write(*,*) "omega2:", omega2
+    if(isnan(pdfn1)) then
+        pdfn1=0.0
+    end if
+    if(isnan(pdfn2)) then
+        pdfn2=0.0
+    end if
+    if(isnan(pdfn3)) then
+        pdfn2=0.0
+    end if
+    if(isnan(pdfn4)) then
+        pdfn2=0.0
+    end if
+
+    h_temp=omega1*pdfn1*pdfn2+omega2*pdfn3*pdfn4
+    !write(*,*) "h_temp from test subroutine:", h_temp
+    if(isnan(h_temp)) then
+        h=0.0
+    else
+        h=t_temp
+    end if
+
+    test_val=h_temp
+
+end subroutine
 
 
 real function indicator(x1,x2)

@@ -86,6 +86,8 @@ real function pdf(a,b,mx,sx,x,x0,t)
         case(5)       !exponential distribution
             pdf=b*exp(-b*(x-x0))
         case(6) !ex-max type I
+            a=(3.141/sqrt(6.0))*(1/sx)
+			b=mx-(0.577216/a)
             pdf=a*exp(-1*a*(x-b)-exp(-1*a*(x-b)))
     end select
 
