@@ -1,4 +1,4 @@
-subroutine importanceSampling
+subroutine failureImportanceSampling
 use variables
 implicit none
 
@@ -18,6 +18,7 @@ real u1
 real part1, part2, part3
 real indicator, indicator_val, pdf_xi1, pdf_xi2
 real h_val
+real x1max,x1min, x2max,x2min
 
 real, allocatable:: iterationSamples(:)  !array which keeps number of sampled points in each iteration
 real, allocatable:: iterationProbability(:) !array which keeps the value of probability in each iteration
@@ -36,7 +37,7 @@ allocate(iterationProbability(maxIter))
 allocate(allSampledPoints(maxIter,maxPoints,2))
 allocate(h_params(maxIter,6))
 
-
+write(*,*) "Calculating the failure according to Importance Sampling Apporach"
 iterationSamples=0.0
 iterationProbability=0.0
 allSampledPoints=0.0
@@ -72,7 +73,8 @@ write(10,*) x2x1, x2x2
 close(10)
 
 
-call plotSampling(0)
+
+call plotSampling(0,c1_r)
 
 !
 !
@@ -153,20 +155,17 @@ do u=1,iter
         do i=1,iterationSamples(u)
         part1=0.0
         do j=1,iter
-                        call h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
-                        sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2),h_val)
-                        part1=part1+(iterationSamples(j)/totalSampled)*h_val
-
+            call h(h_params(j,1),h_params(j,2),h_params(j,3),h_params(j,4),h_params(j,5),h_params(j,6),&
+            sx1,sx2,allSampledPoints(u,i,1),allSampledPoints(u,i,2),h_val)
+            part1=part1+(iterationSamples(j)/totalSampled)*h_val
         end do
-            indicator_val=indicator(allSampledPoints(u,i,1),allSampledPoints(u,i,2))
-            pdf_xi1=pdf(a1,b1,mx1,sx1,allSampledPoints(u,i,1),x01,t1)
-            pdf_xi2=pdf(a2,b2,mx2,sx2,allSampledPoints(u,i,2),x02,t2)
-            if(isnan(pdf_xi1)) then
-                pdf_xi1=0.0
-            end if
-            if(isnan(pdf_xi2)) then
-                pdf_xi2=0.0
-            end if
+        indicator_val=indicator(allSampledPoints(u,i,1),allSampledPoints(u,i,2))
+        pdf_xi1=pdf(a1,b1,mx1,sx1,allSampledPoints(u,i,1),x01,t1)
+        pdf_xi2=pdf(a2,b2,mx2,sx2,allSampledPoints(u,i,2),x02,t2)
+
+        if(isnan(pdf_xi1)) pdf_xi1=0.0
+        if(isnan(pdf_xi2)) pdf_xi2=0.0
+
         part2=part2+((indicator_val*pdf_xi1*pdf_xi2)/part1)
     end do
     part3=part3+part2
@@ -176,14 +175,15 @@ iterationProbability(iter) = part3/totalSampled
 
 end if
 
-write(*,*) "probability: ", iterationProbability(iter)
+!write(*,*) "probability: ", iterationProbability(iter)
 
 previousProbability=iterationProbability(iter-1)
 if((previousProbability-eps*previousProbability).lt.iterationProbability(iter)&
     .and.(previousProbability+eps*previousProbability).gt.iterationProbability(iter)) then
     passInARow=passInARow+1
     if(passInARow==5) then
-        write(*,*) "Final failure probability:", iterationProbability(iter)
+        write(*,*) "Failure probability:", iterationProbability(iter)
+        write(*,*) "Sampled points: ", totalSampled
         exit
     end if
 end if
@@ -319,21 +319,31 @@ close(11) !sampledPoints.txt
 iterationSamples(iter) = sampledThisIter
 
 
-!call plotSampling(iter)
+call plotSampling(iter,c1_r)
 end do
 end subroutine
 
 subroutine plotSampling(iter)
     implicit none
     integer iter
+    real x1max,x1min,x2max,x2min
+    real c1_r
+
+open(10,file='data/chartRange.txt')
+read(10,*) x1max
+read(10,*) x1min
+read(10,*) x2max
+read(10,*) x2min
+read(10,*) c1_r
+close(10)
 
 open(40,file='data/plotSampling.plt')
     write(40,*) 'set terminal pngcairo enhanced font "Verdana,10"'
     write(40,'(A,I6.6,A)') 'set output "data/sampling',iter,'.png"'
     write(40,*) 'set style line 1 lt 1 lc rgb "#0000FF" lw 1'
-    write(40,*) 'set xrange [35:90]'
-    write(40,*) 'set yrange [100000:500000]'
-    write(40,*) 'g(x) = 3278.66*x'
+    write(40,*) 'set xrange [',x1min-0.1*abs(x1min),':',x1max+0.1*abs(x1max),']'
+    write(40,*) 'set yrange [',x2min-0.1*abs(x2min),':',x2max+0.1*abs(x2max),']'
+    write(40,*) 'g(x) = ',c1_r,'*x'
     write(40,*) 'set xlabel "X1"'
     write(40,*) 'set ylabel "X2"'
     write(40,*) 'plot g(x) title "g(x1,x2)=0" ls 1,\'

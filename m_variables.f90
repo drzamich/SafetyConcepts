@@ -19,7 +19,7 @@ module variables
     real x1_init
     real c1_r !paramater next to x1 in a rearanged equation c1*x1+c2*x2=0
     integer samplingPoints
-
+    integer samplingMonteCarlo, chartsMonteCarlo
     integer t1,t2
 
 end module

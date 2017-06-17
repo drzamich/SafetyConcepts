@@ -13,9 +13,10 @@ program main
 
     !call generateCdfs(samplesSize,a,b,mx,sx,q,x0,t,barSize)
 
-    !call failureProbability
 
     call readFileNew
 
-    call importanceSampling
+    call failureMonteCarlo
+
+    call failureImportanceSampling
 end

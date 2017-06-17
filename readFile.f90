@@ -50,6 +50,11 @@ read(10,*) sx2
 read(10,*) x02
 
 read(10,*)
+read(10,*) !properties of monte carlo apporach
+read(10,*) samplingMonteCarlo
+read(10,*) chartsMonteCarlo
+
+read(10,*)
 read(10,*) !properties of adaptive importance apporach
 read(10,*) samplingPoints
 read(10,*) x1_init
