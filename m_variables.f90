@@ -15,11 +15,14 @@ module variables
     real a2,b2,mx2,sx2,x02
     real eps
     integer maxIter, maxPoints
-    real c1,c2 !parameters of the failure function
+    real c0,c1,c2 !parameters of the failure function
     real x1_init
     real c1_r !paramater next to x1 in a rearanged equation c1*x1+c2*x2=0
     integer samplingPoints
     integer samplingMonteCarlo, chartsMonteCarlo
     integer t1,t2
+    real samplingPointsChartRatio
+    real sigmaFactor
+    real montecarloPointsRatio
 
 end module
